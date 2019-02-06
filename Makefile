@@ -1,3 +1,11 @@
+CONFIG_MT7603E = m
+CONFIG_MT76x02_LIB = m
+CONFIG_MT76x02_USB = m
+CONFIG_MT76_USB = m
+CONFIG_MT76x2_COMMON = m
+CONFIG_MT76x0_COMMON = m
+
+
 EXTRA_CFLAGS += -Werror -DCONFIG_MT76_LEDS
 
 obj-m := mt76.o
@@ -13,17 +21,13 @@ mt76-y := \
 
 mt76-usb-y := usb.o usb_trace.o usb_mcu.o
 
-mt7603e-y := \
-	mt7603_pci.o mt7603_soc.o mt7603_main.o mt7603_init.o mt7603_mcu.o \
-	mt7603_core.o mt7603_dma.o mt7603_mac.o mt7603_eeprom.o \
-	mt7603_beacon.o mt7603_debugfs.o
-
 mt76x02-lib-y := mt76x02_util.o mt76x02_mac.o mt76x02_mcu.o \
 		 mt76x02_eeprom.o mt76x02_phy.o mt76x02_mmio.o \
 		 mt76x02_txrx.o mt76x02_trace.o mt76x02_debugfs.o \
 		 mt76x02_dfs.o
 
 mt76x02-usb-y := mt76x02_usb_mcu.o mt76x02_usb_core.o
+
 
 .PHONY: modules clean install
 KSRC    = /lib/modules/$(shell uname -r)/build/
