@@ -15,3 +15,18 @@ mt7603e-y := \
 	mt7603_pci.o mt7603_soc.o mt7603_main.o mt7603_init.o mt7603_mcu.o \
 	mt7603_core.o mt7603_dma.o mt7603_mac.o mt7603_eeprom.o \
 	mt7603_beacon.o mt7603_debugfs.o
+
+.PHONY: modules clean install
+KSRC    = /lib/modules/$(shell uname -r)/build/
+DEST    = /lib/modules/$(shell uname -r)/kernel/drivers/net/wireless/mt76/
+MDIR    = $(CURDIR)
+modules:
+	make -C $(KSRC) M=$(MDIR) modules
+
+clean:
+	make -C $(KSRC) M=$(MDIR) clean
+
+install:
+	mkdir -p $(DEST)
+	cp *.ko $(DEST)
+	depmod -a
