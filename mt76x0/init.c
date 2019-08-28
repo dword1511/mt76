@@ -187,6 +187,8 @@ void mt76x0_mac_stop(struct mt76x02_dev *dev)
 {
 	int i = 200, ok = 0;
 
+	mt76_clear(dev, MT_TXOP_CTRL_CFG, MT_TXOP_ED_CCA_EN);
+
 	/* Page count on TxQ */
 	while (i-- && ((mt76_rr(dev, 0x0438) & 0xffffffff) ||
 		       (mt76_rr(dev, 0x0a30) & 0x000000ff) ||
@@ -257,33 +259,10 @@ int mt76x0_init_hardware(struct mt76x02_dev *dev)
 		return ret;
 
 	mt76x0_phy_init(dev);
-	mt76x02_init_beacon_config(dev);
 
 	return 0;
 }
 EXPORT_SYMBOL_GPL(mt76x0_init_hardware);
-
-struct mt76x02_dev *
-mt76x0_alloc_device(struct device *pdev,
-		    const struct mt76_driver_ops *drv_ops,
-		    const struct ieee80211_ops *ops)
-{
-	struct mt76x02_dev *dev;
-	struct mt76_dev *mdev;
-
-	mdev = mt76_alloc_device(sizeof(*dev), ops);
-	if (!mdev)
-		return NULL;
-
-	mdev->dev = pdev;
-	mdev->drv = drv_ops;
-
-	dev = container_of(mdev, struct mt76x02_dev, mt76);
-	mutex_init(&dev->phy_mutex);
-
-	return dev;
-}
-EXPORT_SYMBOL_GPL(mt76x0_alloc_device);
 
 static void
 mt76x0_init_txpower(struct mt76x02_dev *dev,
@@ -300,7 +279,9 @@ mt76x0_init_txpower(struct mt76x02_dev *dev,
 		mt76x0_get_tx_power_per_rate(dev, chan, &t);
 		mt76x0_get_power_info(dev, chan, &tp);
 
-		chan->max_power = (mt76x02_get_max_rate_power(&t) + tp) / 2;
+		chan->orig_mpwr = (mt76x02_get_max_rate_power(&t) + tp) / 2;
+		chan->max_power = min_t(int, chan->max_reg_power,
+					chan->orig_mpwr);
 	}
 }
 

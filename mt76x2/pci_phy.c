@@ -1,17 +1,6 @@
+// SPDX-License-Identifier: ISC
 /*
  * Copyright (C) 2016 Felix Fietkau <nbd@nbd.name>
- *
- * Permission to use, copy, modify, and/or distribute this software for any
- * purpose with or without fee is hereby granted, provided that the above
- * copyright notice and this permission notice appear in all copies.
- *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
 #include <linux/delay.h>
@@ -74,6 +63,7 @@ mt76x2_phy_channel_calibrate(struct mt76x02_dev *dev, bool mac_stopped)
 		mt76x2_mac_resume(dev);
 
 	mt76x2_apply_gain_adj(dev);
+	mt76x02_edcca_init(dev);
 
 	dev->cal.channel_cal_done = true;
 }
@@ -240,10 +230,8 @@ int mt76x2_phy_set_channel(struct mt76x02_dev *dev,
 	mt76_wr(dev, MT_BBP(AGC, 2), 0x00007070);
 	mt76_wr(dev, MT_TXOP_CTRL_CFG, 0x04101B3F);
 
-	if (scan) {
-		mt76x02_edcca_init(dev, false);
+	if (scan)
 		return 0;
-	}
 
 	mt76x2_phy_channel_calibrate(dev, true);
 	mt76x02_init_agc_gain(dev);
@@ -255,8 +243,6 @@ int mt76x2_phy_set_channel(struct mt76x02_dev *dev,
 		mt76_rmw_field(dev, MT_TX_ALC_CFG_2, MT_TX_ALC_CFG_2_TEMP_COMP,
 			       0x38);
 	}
-
-	mt76x02_edcca_init(dev, true);
 
 	ieee80211_queue_delayed_work(mt76_hw(dev), &dev->cal_work,
 				     MT_CALIBRATE_INTERVAL);
@@ -297,10 +283,16 @@ void mt76x2_phy_calibrate(struct work_struct *work)
 	struct mt76x02_dev *dev;
 
 	dev = container_of(work, struct mt76x02_dev, cal_work.work);
+
+	mutex_lock(&dev->mt76.mutex);
+
 	mt76x2_phy_channel_calibrate(dev, false);
 	mt76x2_phy_tssi_compensate(dev);
 	mt76x2_phy_temp_compensate(dev);
 	mt76x2_phy_update_channel_gain(dev);
+
+	mutex_unlock(&dev->mt76.mutex);
+
 	ieee80211_queue_delayed_work(mt76_hw(dev), &dev->cal_work,
 				     MT_CALIBRATE_INTERVAL);
 }
