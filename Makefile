@@ -4,6 +4,11 @@ CONFIG_MT76x02_USB = m
 CONFIG_MT76_USB = m
 CONFIG_MT76x2_COMMON = m
 CONFIG_MT76x0_COMMON = m
+CONFIG_MT76x2E = m
+CONFIG_MT76x2U = m
+CONFIG_MT76x0E = m
+CONFIG_MT76x0U = m
+export CONFIG_MT76x2_COMMON CONFIG_MT76x0_COMMON CONFIG_MT76x2E CONFIG_MT76x2U CONFIG_MT76x0E CONFIG_MT76x0U
 
 
 EXTRA_CFLAGS += -Werror -DCONFIG_MT76_LEDS
@@ -32,6 +37,7 @@ mt76x02-usb-y := mt76x02_usb_mcu.o mt76x02_usb_core.o
 .PHONY: modules clean install
 KSRC    = /lib/modules/$(shell uname -r)/build/
 DEST    = /lib/modules/$(shell uname -r)/kernel/drivers/net/wireless/mt76/
+DEST_FW = /lib/firmware/
 MDIR    = $(CURDIR)
 modules:
 	make -C $(KSRC) M=$(MDIR) modules
@@ -41,5 +47,7 @@ clean:
 
 install:
 	mkdir -p $(DEST)
-	cp *.ko $(DEST)
+	cp -a *.ko $(DEST)
+	cp -a */*.ko $(DEST)
+	cp -a firmware/*.bin $(DEST_FW)
 	depmod -a
